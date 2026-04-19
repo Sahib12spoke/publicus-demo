@@ -1,0 +1,32 @@
+# Data — never commit raw or processed data
+data/
+*.csv
+*.parquet
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

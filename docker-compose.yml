@@ -1,0 +1,58 @@
+services:
+
+  # ── Pipeline runner ───────────────────────────────────────────────────────
+  # One-shot service: process the raw CSV and write the parquet cache.
+  # Run once before starting the stack:
+  #   docker compose run --rm pipeline
+  #   OR:  make docker-pipeline
+  pipeline:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["python", "-m", "pipeline", "run"]
+    volumes:
+      - pipeline_cache:/app/data/processed  # write cache here
+      - ./data:/app/data:ro                 # read raw CSV (read-only)
+    environment:
+      GRANT_RADAR_CACHE_DIR: /app/data/processed
+    profiles:
+      - pipeline   # not started by `docker compose up` — run explicitly
+
+  # ── Backend API ───────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - pipeline_cache:/app/data/processed:ro  # read cache (read-only)
+    environment:
+      GRANT_RADAR_CACHE_DIR: /app/data/processed
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s   # cache loads in <1s — short startup window
+
+  # ── Frontend ──────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ""   # empty = use Next.js rewrites (same-origin proxy)
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ""
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  pipeline_cache:   # shared between pipeline runner and backend
