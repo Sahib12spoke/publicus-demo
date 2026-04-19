@@ -1,10 +1,10 @@
 [
   {
     "rule": "negative_award",
-    "description": "Award value is zero or negative",
+    "description": "Award value is negative",
     "severity": "error",
-    "flagged": 581,
-    "pct": 0.26
+    "flagged": 0,
+    "pct": 0.0
   },
   {
     "rule": "implausibly_large",
@@ -19,6 +19,13 @@
     "severity": "error",
     "flagged": 0,
     "pct": 0.0
+  },
+  {
+    "rule": "missing_award_value",
+    "description": "Award value is missing or zero",
+    "severity": "warning",
+    "flagged": 581,
+    "pct": 0.26
   },
   {
     "rule": "unknown_province",
