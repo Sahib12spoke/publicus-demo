@@ -125,10 +125,15 @@ def resolve_entities(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     # ── Tier 3: Singletons ───────────────────────────────────────────────────
+    # Hash on (recipient_name, recipient_province) so identical recipients in
+    # different rows collapse to one entity. Fall back to row idx only when
+    # recipient_name is missing (genuinely unidentifiable rows stay separate).
     singleton_mask = df["entity_id"].isna()
     for idx in df[singleton_mask].index:
-        key = df.at[idx, "recipient_name"] or str(idx)
-        df.at[idx, "entity_id"] = "E-" + hashlib.md5(f"s:{key}:{idx}".encode()).hexdigest()[:10]
+        name = df.at[idx, "recipient_name"]
+        prov = df.at[idx, "recipient_province"] or ""
+        key = f"s:{name}:{prov}" if name else f"s::{idx}"
+        df.at[idx, "entity_id"] = "E-" + hashlib.md5(key.encode()).hexdigest()[:10]
         df.at[idx, "entity_match_tier"] = 3
 
     # ── Summary ──────────────────────────────────────────────────────────────
