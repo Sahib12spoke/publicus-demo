@@ -12,17 +12,27 @@ export function FlipStatBox({
       className={`stat-box flip-card${flipped ? " flipped" : ""}`}
       onClick={() => setFlipped(f => !f)}
       title="Click to learn more"
-      style={{ position: "relative", minHeight: 80 }}
+      style={{ position: "relative" }}
     >
-      <div className="flip-card-inner">
-        <div className="flip-card-front">
-          <div className="value">{value}</div>
-          <div className="label">{label} ⓘ</div>
-        </div>
-        <div className="flip-card-back">
+      {/* front face — normal flow, sets the box height */}
+      <div style={{ visibility: flipped ? "hidden" : "visible" }}>
+        <div className="value">{value}</div>
+        <div className="label">{label} ⓘ</div>
+      </div>
+
+      {/* back face — overlaid when flipped */}
+      {flipped && (
+        <div style={{
+          position: "absolute", inset: 0,
+          padding: "1rem 1.25rem",
+          display: "flex", alignItems: "center",
+          fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.6,
+          background: "var(--bg-secondary)",
+          animation: "fadeIn 0.2s ease",
+        }}>
           {back}
         </div>
-      </div>
+      )}
     </div>
   );
 }

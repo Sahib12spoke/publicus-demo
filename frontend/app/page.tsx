@@ -30,7 +30,7 @@ export default async function HomePage() {
             { value: stats.total_funding_fmt,             label: "Total Grants Tracked" },
             { value: stats.total_awards.toLocaleString(), label: "Award Records" },
             { value: stats.unique_recipients.toLocaleString(), label: "Unique Recipients" },
-            { value: stats.year_range,                    label: "Fiscal Years" },
+            { value: stats.year_range.replace(/(\d{4})-\d{2}/g, "$1"), label: "Fiscal Years" },
           ].map(({ value, label }) => (
             <div key={label} className="stat-box">
               <div className="value">{value}</div>
