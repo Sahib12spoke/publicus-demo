@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { FlipStatBox } from "./flip-stat";
 
 async function getStats() {
   try { return await api.stats(); } catch { return null; }
@@ -30,18 +29,13 @@ export default async function HomePage() {
             { value: stats.total_funding_fmt,             label: "Total Grants Tracked" },
             { value: stats.total_awards.toLocaleString(), label: "Award Records" },
             { value: stats.unique_recipients.toLocaleString(), label: "Unique Recipients" },
-            { value: stats.year_range.replace(/(\d{4})-\d{2}/g, "$1"), label: "Fiscal Years" },
+            { value: stats.year_range.replace(/(\d{4})-\d{2,4}/g, "$1"), label: "Fiscal Years" },
           ].map(({ value, label }) => (
             <div key={label} className="stat-box">
               <div className="value">{value}</div>
               <div className="label">{label}</div>
             </div>
           ))}
-          <FlipStatBox
-            value={`${stats.naics_coverage_pct}%`}
-            label="Industry Classified"
-            back="Only 4.8% of grant records include an industry (NAICS) code — the government rarely files one. Grant Radar infers the rest from program names and descriptions using keyword matching."
-          />
         </div>
       )}
 

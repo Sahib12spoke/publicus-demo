@@ -23,8 +23,8 @@ def consolidate_amendments(df: pd.DataFrame) -> pd.DataFrame:
 QA_RULES = [
     {
         "name": "negative_award",
-        "desc": "Award value is zero or negative",
-        "check": lambda df: df["award_value"].fillna(0) <= 0,
+        "desc": "Award value is negative",
+        "check": lambda df: df["award_value"].fillna(0) < 0,
         "severity": "error",
     },
     {
@@ -38,6 +38,12 @@ QA_RULES = [
         "desc": "Recipient name is missing",
         "check": lambda df: df["recipient_name"].isna(),
         "severity": "error",
+    },
+    {
+        "name": "missing_award_value",
+        "desc": "Award value is missing or zero",
+        "check": lambda df: df["award_value"].isna() | (df["award_value"].fillna(0) == 0),
+        "severity": "warning",
     },
     {
         "name": "unknown_province",

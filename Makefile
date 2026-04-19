@@ -81,6 +81,10 @@ pipeline-skip-scraper:
 pipeline-info:
 	cd $(BACKEND_DIR) && $(UV) run python -m pipeline info
 
+pipeline-qa:
+	@echo "Re-running QA rules against cached parquet..."
+	cd $(BACKEND_DIR) && $(UV) run python -m pipeline qa
+
 # ── Development servers ───────────────────────────────────────────────────────
 
 dev:

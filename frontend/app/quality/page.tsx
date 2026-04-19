@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { api, QaRow } from "@/lib/api";
+import { api, QaRow, Stats } from "@/lib/api";
 
 const PIPELINE_STAGES = [
   { name: "Ingestion",         desc: "Load raw CSV (204 MB, 402K rows) from CKAN API or local file." },
@@ -23,17 +23,18 @@ function fmt(n: number) {
 export default function QualityPage() {
   const [qa, setQa] = useState<QaRow[]>([]);
   const [health, setHealth] = useState<{ status: string; records: number; program_records: number; cache: Record<string, unknown> } | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.qaReport(), api.health()])
-      .then(([q, h]) => { setQa(q); setHealth(h as typeof health); })
+    Promise.all([api.qaReport(), api.health(), api.stats()])
+      .then(([q, h, s]) => { setQa(q); setHealth(h as typeof health); setStats(s); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const errors   = qa.filter(r => r.severity === "error");
-  const warnings = qa.filter(r => r.severity === "warning");
+  const errors   = qa.filter(r => r.severity === "error"   && r.flagged > 0);
+  const warnings = qa.filter(r => r.severity === "warning" && r.flagged > 0);
 
   return (
     <>
@@ -94,7 +95,7 @@ export default function QualityPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {qa.map(r => (
+                    {qa.filter(r => r.flagged > 0).map(r => (
                       <tr key={r.rule}>
                         <td>
                           <span className={`badge badge-${r.severity === "error" ? "danger" : "warning"}`}>
@@ -113,6 +114,50 @@ export default function QualityPage() {
                 </table>
               </div>
             )}
+          </div>
+
+          {/* NAICS coverage */}
+          <div style={{ marginBottom: "2rem" }}>
+            <div className="card-title">Industry (NAICS) Coverage</div>
+            <div className="card" style={{ lineHeight: 1.7 }}>
+              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: 0 }}>
+                NAICS industry codes are the backbone of the Competitive Radar — they're how we answer "who got grants in <em>my</em> sector?" Being transparent about coverage matters more than the number looking good.
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", margin: "1rem 0" }}>
+                <div style={{ borderLeft: "2px solid var(--success)", paddingLeft: "1rem" }}>
+                  <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>
+                    {stats ? `${stats.naics_coverage_pct}%` : "—"}
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Current coverage
+                  </div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.35rem" }}>
+                    Records with a NAICS code after source + keyword inference.
+                  </div>
+                </div>
+
+                <div style={{ borderLeft: "2px solid var(--border)", paddingLeft: "1rem" }}>
+                  <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>40–50%</div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Target (next)
+                  </div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.35rem" }}>
+                    Batched LLM NAICS2 classification on <code>recipient_name + program + description</code>.
+                  </div>
+                </div>
+              </div>
+
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: "0.5rem 0" }}>
+                <strong style={{ color: "var(--text)" }}>Why it's low:</strong> Treasury Board makes the NAICS field optional on the Proactive Disclosure of Grants &amp; Contributions, and most departments don't file one. Our keyword rules only catch records where a sector is explicitly named in the description (e.g. "cybersecurity", "aerospace").
+              </p>
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: "0.5rem 0" }}>
+                <strong style={{ color: "var(--text)" }}>How Radar still works today:</strong> Competitive Radar and Sector Map operate on the classified subset — fewer records but still directionally correct rankings for sectors like IT/consulting (NAICS 5415), engineering (5413), and manufacturing (31–33). Timeline and Recipient pages aggregate on entity-resolved recipients regardless of NAICS, so they're unaffected.
+              </p>
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: "0.5rem 0 0" }}>
+                <strong style={{ color: "var(--text)" }}>What's next:</strong> A two-step enrichment layer — (1) batched LLM NAICS2 inference as a separate parquet artifact with per-record provenance (<code>original</code> / <code>keyword</code> / <code>llm</code>), (2) spot-check before surfacing in Radar queries. Kept decoupled from the main pipeline so a bad LLM run doesn't degrade the rest of the dashboard.
+              </p>
+            </div>
           </div>
 
           {/* Pipeline stages */}

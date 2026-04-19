@@ -149,6 +149,28 @@ def _info() -> None:
     print()
 
 
+def _qa_only() -> None:
+    """Reload the cached parquet, re-run QA rules, rewrite qa_report.json.
+
+    Much faster than a full pipeline run — useful after tweaking QA rules.
+    """
+    import json
+    from pipeline.cache import load, _cache_dir
+    from pipeline.consolidation import run_qa
+
+    awards_df, _, _ = load()
+    qa_report = run_qa(awards_df)
+
+    qa_path = _cache_dir() / "qa_report.json"
+    qa_path.write_text(json.dumps(qa_report, indent=2))
+
+    errors   = sum(r["flagged"] for r in qa_report if r["severity"] == "error"   and r["flagged"] > 0)
+    warnings = sum(r["flagged"] for r in qa_report if r["severity"] == "warning" and r["flagged"] > 0)
+    log.info("QA rerun complete — %d errors, %d warnings → %s", errors, warnings, qa_path)
+    for r in qa_report:
+        log.info("  %-22s %-9s flagged=%d (%.2f%%)", r["rule"], r["severity"], r["flagged"], r["pct"] or 0)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="python -m pipeline",
@@ -167,6 +189,7 @@ def main() -> None:
     )
 
     sub.add_parser("info", help="Show current cache status")
+    sub.add_parser("qa",   help="Re-run QA rules against the cached parquet (fast)")
 
     args = parser.parse_args()
 
@@ -174,6 +197,8 @@ def main() -> None:
         _run(fetch=args.fetch, skip_programs=args.skip_programs)
     elif args.command == "info":
         _info()
+    elif args.command == "qa":
+        _qa_only()
     else:
         parser.print_help()
         sys.exit(1)

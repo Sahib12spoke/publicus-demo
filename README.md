@@ -46,30 +46,43 @@ make install
 
 ### 2. Run the pipeline (once)
 
+From the `backend/` directory:
+
 ```bash
-make pipeline
+cd backend
+uv run python -m pipeline run
 ```
 
 This reads `data/federal_grants_raw.csv`, runs all processing steps, and writes the cache to `data/processed/`. Takes ~5–10 minutes for all 402K records.
 
-Check what was processed:
+Other pipeline commands (run from `backend/`):
 
 ```bash
-make pipeline-info
+uv run python -m pipeline info     # show current cache status
+uv run python -m pipeline qa       # re-run only QA rules against cached parquet (fast)
 ```
+
+Makefile shortcuts (run from repo root): `make pipeline` · `make pipeline-info` · `make pipeline-qa`.
 
 ### 3. Start the dev servers
 
-```bash
-make dev          # starts backend + frontend in parallel
-```
+Open two terminals.
 
-Or individually:
+**Backend** (from `backend/`):
 
 ```bash
-make backend      # http://localhost:8000
-make frontend     # http://localhost:3000
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+**Frontend** (from `frontend/`):
+
+```bash
+npm run dev
+```
+
+Then open http://localhost:3000. The backend serves `http://localhost:8000`; Next.js rewrites `/api/*` → the backend automatically.
+
+Makefile shortcuts (run from repo root): `make backend` · `make frontend` · `make dev` (both in parallel).
 
 ---
 
@@ -83,6 +96,7 @@ Pipeline  (run before starting the server)
   make pipeline             Process data/federal_grants_raw.csv → cache
   make pipeline-fetch       Re-download from CKAN API then process
   make pipeline-info        Show current cache status (age, record count)
+  make pipeline-qa          Re-run QA rules only (seconds, no full rerun needed)
 
 Development
   make dev                  Start backend + frontend (parallel)
