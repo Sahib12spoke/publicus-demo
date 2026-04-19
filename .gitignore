@@ -3,6 +3,12 @@ data/
 *.csv
 *.parquet
 
+# Exception: bake the processed cache into the backend image for deploy
+!backend/data/
+!backend/data/processed/
+!backend/data/processed/*.parquet
+!backend/data/processed/*.json
+
 # Python
 __pycache__/
 *.py[cod]

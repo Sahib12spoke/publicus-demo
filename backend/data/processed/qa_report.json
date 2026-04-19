@@ -1,0 +1,30 @@
+[
+  {
+    "rule": "negative_award",
+    "description": "Award value is zero or negative",
+    "severity": "error",
+    "flagged": 581,
+    "pct": 0.26
+  },
+  {
+    "rule": "implausibly_large",
+    "description": "Award value > $500M",
+    "severity": "warning",
+    "flagged": 1,
+    "pct": 0.0
+  },
+  {
+    "rule": "missing_recipient",
+    "description": "Recipient name is missing",
+    "severity": "error",
+    "flagged": 0,
+    "pct": 0.0
+  },
+  {
+    "rule": "unknown_province",
+    "description": "Province could not be normalized",
+    "severity": "warning",
+    "flagged": 46836,
+    "pct": 21.17
+  }
+]

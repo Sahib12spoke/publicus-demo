@@ -17,8 +17,10 @@ RUN uv pip install --system --no-cache .
 COPY pipeline/ pipeline/
 COPY app/ app/
 
-# Pipeline cache lives on a volume mounted at runtime.
-# Set GRANT_RADAR_CACHE_DIR to override the default (data/processed).
+# Bake the pipeline cache into the image for deploy (Railway/Fly/etc).
+# For local dev, a volume mount at /app/data/processed overrides these files.
+COPY data/ data/
+
 ENV PYTHONUNBUFFERED=1
 ENV GRANT_RADAR_CACHE_DIR=/app/data/processed
 
