@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main className="container">{children}</main>
             <footer className="site-footer">
               <span>grant_radar — Canadian government grants intelligence</span>
-              <span>data: open.canada.ca · open.alberta.ca</span>
+              <span>data: open.canada.ca</span>
             </footer>
           </div>
         </ThemeProvider>
