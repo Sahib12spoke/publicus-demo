@@ -90,6 +90,36 @@ export interface HeatmapData {
   values: number[][];
 }
 
+export interface AwardRow {
+  source_ref:   string | null;
+  fiscal_year:  string | null;
+  program_name: string | null;
+  department:   string | null;
+  award_value:  number | null;
+  award_fmt:    string;
+  start_date:   string | null;
+  end_date:     string | null;
+  naics_code:   string | null;
+  description:  string | null;
+}
+
+export interface RecipientProfile {
+  entity_id:          string;
+  recipient_name:     string | null;
+  recipient_bn:       string | null;
+  province:           string | null;
+  city:               string | null;
+  total_funding:      number;
+  total_funding_fmt:  string;
+  grant_count:        number;
+  first_year:         string | null;
+  latest_year:        string | null;
+  by_year:            Record<string, number>;
+  top_programs:       Record<string, number>;
+  top_departments:    Record<string, number>;
+  awards:             AwardRow[];
+}
+
 export interface QaRow {
   rule: string;
   description: string;
@@ -111,6 +141,7 @@ export const api = {
                         get<TopRecipientRow[]>("/top-recipients", { province, top_n: topN }),
   programs:           (status?: string, programType?: string) =>
                         get<ProgramMetadata[]>("/programs", { status, program_type: programType }),
+  recipient:          (entityId: string)           => get<RecipientProfile>(`/recipient/${entityId}`),
   sectorHeatmap:      ()                          => get<HeatmapData>("/sector-heatmap"),
   qaReport:           ()                          => get<QaRow[]>("/qa-report"),
   health:             ()                          => get<{ status: string; records: number }>("/health"),

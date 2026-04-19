@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { api, NaicsSector, CompetitorRow, TrendRow, ProgramRow, ProgramMetadata } from "@/lib/api";
 import { TrendChart } from "@/lib/charts";
 
@@ -187,7 +188,11 @@ export default function RadarPage() {
                         {competitors.map(r => (
                           <tr key={r.entity_id}>
                             <td style={{ color: "var(--text-muted)" }}>{r.rank}</td>
-                            <td style={{ fontWeight: 500 }}>{r.recipient_name}</td>
+                            <td style={{ fontWeight: 500 }}>
+                              <Link href={`/recipient/${r.entity_id}`} style={{ color: "var(--accent)" }}>
+                                {r.recipient_name}
+                              </Link>
+                            </td>
                             <td><span className="badge badge-neutral">{r.province}</span></td>
                             <td style={{ textAlign: "right", color: "var(--success)", fontWeight: 600 }}>
                               {r.total_funding_fmt}

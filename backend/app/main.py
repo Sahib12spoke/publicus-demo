@@ -195,23 +195,92 @@ def get_programs(
     if program_type:
         df = df[df["program_type"] == program_type.lower()]
 
+    def _s(v):
+        try: return None if pd.isna(v) else str(v)
+        except Exception: return str(v) if v is not None else None
+
+    def _f(v):
+        try: return None if pd.isna(v) else float(v)
+        except Exception: return None
+
     records = []
     for _, row in df.iterrows():
         records.append({
-            "program_id":       row["program_id"],
-            "program_name":     row["program_name"],
-            "description":      row.get("description"),
-            "eligibility_text": row.get("eligibility_text"),
-            "program_type":     row.get("program_type"),
-            "min_funding":      row.get("min_funding"),
-            "max_funding":      row.get("max_funding"),
+            "program_id":       _s(row.get("program_id")),
+            "program_name":     _s(row.get("program_name")),
+            "description":      _s(row.get("description")),
+            "eligibility_text": _s(row.get("eligibility_text")),
+            "program_type":     _s(row.get("program_type")),
+            "min_funding":      _f(row.get("min_funding")),
+            "max_funding":      _f(row.get("max_funding")),
             "naics_codes":      list(row.get("naics_codes") or []),
             "naics_keywords":   list(row.get("naics_keywords") or [])[:6],
             "province_scope":   list(row.get("province_scope") or []),
-            "status":           row.get("status"),
-            "source_url":       row.get("source_url"),
+            "status":           _s(row.get("status")),
+            "source_url":       _s(row.get("source_url")),
         })
     return records
+
+
+@app.get("/api/recipient/{entity_id}")
+def get_recipient(entity_id: str):
+    df = _require_data()
+    rows = df[df["entity_id"] == entity_id]
+    if rows.empty:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+
+    r = rows.iloc[0]
+
+    def _s(v):
+        try: return None if pd.isna(v) else str(v)
+        except Exception: return str(v) if v is not None else None
+
+    def _f(v):
+        try: return None if pd.isna(v) else float(v)
+        except Exception: return None
+
+    total_funding = float(rows["award_value"].fillna(0).sum())
+    by_year = (
+        rows[rows["award_value"].notna() & rows["fiscal_year"].notna()]
+        .groupby("fiscal_year")["award_value"].sum()
+        .sort_index()
+        .to_dict()
+    )
+    programs = rows["program_name"].dropna().value_counts().head(10).to_dict()
+    departments = rows["department"].dropna().value_counts().head(5).to_dict()
+
+    awards = []
+    for _, row in rows.sort_values("fiscal_year", ascending=False).head(50).iterrows():
+        v = _f(row.get("award_value"))
+        awards.append({
+            "source_ref":    _s(row.get("source_ref")),
+            "fiscal_year":   _s(row.get("fiscal_year")),
+            "program_name":  _s(row.get("program_name")),
+            "department":    _s(row.get("department")),
+            "award_value":   v,
+            "award_fmt":     f"${v/1e6:.1f}M" if v and v >= 1e6 else (f"${v/1e3:.0f}K" if v and v >= 1e3 else (f"${v:.0f}" if v else "—")),
+            "start_date":    _s(row.get("start_date")),
+            "end_date":      _s(row.get("end_date")),
+            "naics_code":    _s(row.get("naics_code")),
+            "description":   _s(row.get("description")),
+        })
+
+    return {
+        "entity_id":      entity_id,
+        "recipient_name": _s(r.get("recipient_name")),
+        "recipient_bn":   _s(r.get("recipient_bn")),
+        "province":       _s(r.get("recipient_province")),
+        "city":           _s(r.get("recipient_city")),
+        "total_funding":  total_funding,
+        "total_funding_fmt": f"${total_funding/1e6:.1f}M" if total_funding >= 1e6 else f"${total_funding/1e3:.0f}K",
+        "grant_count":    len(rows),
+        "first_year":     _s(rows["fiscal_year"].dropna().min()),
+        "latest_year":    _s(rows["fiscal_year"].dropna().max()),
+        "by_year":        by_year,
+        "top_programs":   programs,
+        "top_departments":departments,
+        "awards":         awards,
+    }
 
 
 @app.get("/api/sector-heatmap")
