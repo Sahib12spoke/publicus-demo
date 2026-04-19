@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { api, NaicsSector, CompetitorRow, TrendRow, ProgramRow } from "@/lib/api";
+import { api, NaicsSector, CompetitorRow, TrendRow, ProgramRow, ProgramMetadata } from "@/lib/api";
 import { TrendChart } from "@/lib/charts";
 
 const PROVINCES = [
@@ -37,10 +37,11 @@ export default function RadarPage() {
   const [competitors, setCompetitors] = useState<CompetitorRow[] | null>(null);
   const [trend, setTrend] = useState<TrendRow[] | null>(null);
   const [programs, setPrograms] = useState<ProgramRow[] | null>(null);
+  const [eligibility, setEligibility] = useState<ProgramMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [tab, setTab] = useState<"competitors" | "trend" | "programs">("competitors");
+  const [tab, setTab] = useState<"competitors" | "trend" | "programs" | "eligibility">("competitors");
 
   useEffect(() => {
     api.naicsSectors().then(setSectors).catch(() => {});
@@ -51,14 +52,19 @@ export default function RadarPage() {
     setLoading(true);
     setError(null);
     try {
-      const [c, t, p] = await Promise.all([
+      const [c, t, p, allProgs] = await Promise.all([
         api.competitorMap(naics, province || undefined, topN),
         api.fundingTrend(naics, province || undefined),
         api.programIntelligence(naics, 10),
+        api.programs(),
       ]);
       setCompetitors(c);
       setTrend(t);
       setPrograms(p);
+      const prefix = naics.slice(0, 2);
+      setEligibility(allProgs.filter(p =>
+        p.naics_codes.length === 0 || p.naics_codes.some(c => c.startsWith(prefix))
+      ));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Query failed");
     } finally {
@@ -139,14 +145,23 @@ export default function RadarPage() {
           {competitors && !loading && (
             <>
               <div className="tab-bar" style={{ marginBottom: "1rem" }}>
-                {(["competitors", "trend", "programs"] as const).map(t => (
+                {(["competitors", "trend", "programs", "eligibility"] as const).map(t => (
                   <button
                     key={t}
                     className={`tab${tab === t ? " active" : ""}`}
                     onClick={() => setTab(t)}
                   >
                     {t === "competitors" ? `Competitors (${competitors.length})` :
-                     t === "trend" ? "Funding Trend" : "Programs"}
+                     t === "trend" ? "Funding Trend" :
+                     t === "programs" ? "Programs" :
+                     <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                       Eligibility
+                       {eligibility.length > 0 && (
+                         <span style={{ background: "var(--success)", color: "#000", borderRadius: 2, padding: "0 4px", fontSize: "0.65rem", fontWeight: 700 }}>
+                           {eligibility.length}
+                         </span>
+                       )}
+                     </span>}
                   </button>
                 ))}
               </div>
@@ -220,6 +235,70 @@ export default function RadarPage() {
                     </>
                   ) : (
                     <div className="empty">No trend data available.</div>
+                  )}
+                </div>
+              )}
+
+              {tab === "eligibility" && (
+                <div>
+                  {eligibility.length === 0 ? (
+                    <div className="empty">
+                      No programs in our directory match this sector.<br />
+                      <a href="https://www.canada.ca/en/services/business/grants.html" target="_blank" rel="noreferrer" style={{ color: "var(--info)", fontSize: "0.8rem" }}>
+                        Browse all federal programs →
+                      </a>
+                    </div>
+                  ) : (
+                    eligibility.map(p => (
+                      <div key={p.program_id} className="card" style={{ marginBottom: "1rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+                          <div className="card-title" style={{ margin: 0 }}>{p.program_name}</div>
+                          <span className={`badge badge-${p.status === "open" ? "success" : "neutral"}`}>{p.status}</span>
+                        </div>
+
+                        {p.eligibility_text && (
+                          <p style={{ fontSize: "0.82rem", color: "var(--text)", marginBottom: "0.75rem", lineHeight: 1.5 }}>
+                            {p.eligibility_text}
+                          </p>
+                        )}
+
+                        <div style={{ display: "flex", gap: "2rem", fontSize: "0.78rem", flexWrap: "wrap" }}>
+                          {(p.min_funding !== null || p.max_funding !== null) && (
+                            <div>
+                              <span style={{ color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.65rem", letterSpacing: "0.06em" }}>Funding Range</span>
+                              <div style={{ color: "var(--success)", fontWeight: 600, marginTop: 2 }}>
+                                {p.min_funding !== null ? fmt(p.min_funding) : "—"}
+                                {" – "}
+                                {p.max_funding !== null ? fmt(p.max_funding) : "—"}
+                              </div>
+                            </div>
+                          )}
+                          {p.province_scope.length > 0 && (
+                            <div>
+                              <span style={{ color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.65rem", letterSpacing: "0.06em" }}>Scope</span>
+                              <div style={{ marginTop: 2 }}>{p.province_scope.join(", ")}</div>
+                            </div>
+                          )}
+                          {p.program_type && (
+                            <div>
+                              <span style={{ color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.65rem", letterSpacing: "0.06em" }}>Type</span>
+                              <div style={{ marginTop: 2 }}>{p.program_type}</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {p.source_url && (
+                          <a
+                            href={p.source_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ display: "inline-block", marginTop: "0.75rem", fontSize: "0.75rem", color: "var(--info)" }}
+                          >
+                            Apply / Learn more →
+                          </a>
+                        )}
+                      </div>
+                    ))
                   )}
                 </div>
               )}

@@ -4,10 +4,11 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "./theme-provider";
 
 const LINKS = [
-  { href: "/", label: "home" },
-  { href: "/radar", label: "radar" },
-  { href: "/map", label: "map" },
+  { href: "/",         label: "home" },
+  { href: "/radar",    label: "radar" },
+  { href: "/map",      label: "map" },
   { href: "/programs", label: "programs" },
+  { href: "/quality",  label: "quality", green: true },
 ];
 
 export default function Nav() {
@@ -27,6 +28,13 @@ export default function Nav() {
           className={`nav-link${path === l.href ? " active" : ""}`}
         >
           {l.label}
+          {"green" in l && l.green && (
+            <span style={{
+              display: "inline-block", width: 6, height: 6,
+              borderRadius: "50%", background: "var(--success)",
+              marginLeft: 5, verticalAlign: "middle",
+            }} />
+          )}
         </Link>
       ))}
 
