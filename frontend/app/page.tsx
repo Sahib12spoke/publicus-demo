@@ -19,8 +19,8 @@ export default async function HomePage() {
           see which rivals are subsidized, from which programs, before they show up at your next RFP.
         </p>
         <div className="hero-actions">
-          <Link href="/radar" className="btn">Open Competitive Radar →</Link>
-          <Link href="/quality" className="btn btn-secondary">See Pipeline Quality</Link>
+          <Link href="/timeline" className="btn">See the Starting Line →</Link>
+          <Link href="/radar" className="btn btn-secondary">Open Competitive Radar</Link>
         </div>
       </section>
 
@@ -48,6 +48,12 @@ export default async function HomePage() {
       <div className="feature-grid">
         {[
           {
+            icon: "↗",
+            href: "/timeline",
+            title: "Grants → RFP Timeline",
+            desc: "Publicus shows the race. Grant Radar shows the starting line — which companies got capability-building grants 12–18 months before the RFP.",
+          },
+          {
             icon: "◎",
             href: "/radar",
             title: "Competitive Radar",
@@ -58,12 +64,6 @@ export default async function HomePage() {
             href: "/map",
             title: "Sector Funding Map",
             desc: "Heatmap of federal grant spending by sector × province. Spot where government money is flowing before it becomes procurement.",
-          },
-          {
-            icon: "◈",
-            href: "/programs",
-            title: "Program Intelligence",
-            desc: "Which programs fund companies in your space? What is the typical award size? Know where to focus your grant applications.",
           },
           {
             icon: "∿",
@@ -99,7 +99,7 @@ export default async function HomePage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginTop: "0.5rem" }}>
           {[
             { icon: "◎", title: "Competitor Alerts", desc: "Get notified when a rival receives a new grant. Stay ahead before they show up at your RFP." },
-            { icon: "▦", title: "Grants → RFP Timeline", desc: "See which grant-funded companies became your procurement competitors 12–18 months later." },
+            { icon: "◈", title: "Program Intelligence Upgrade", desc: "Which programs fund companies in your space, with award-size distributions and open-vs-closed status." },
             { icon: "◈", title: "Provincial Grants", desc: "Ontario, Quebec, BC provincial programs — the federal dataset is just the start." },
             { icon: "∿", title: "Recipient Deep Dives", desc: "ML-powered NAICS classification and natural-language search across all 221K awards." },
           ].map(({ icon, title, desc }) => (

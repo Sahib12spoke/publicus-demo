@@ -28,6 +28,7 @@ from pipeline.intelligence import (
     program_intelligence,
     sector_heatmap,
     overview_stats,
+    timeline,
     top_recipients,
 )
 from pipeline.constants import NAICS_SECTORS
@@ -281,6 +282,29 @@ def get_recipient(entity_id: str):
         "top_departments":departments,
         "awards":         awards,
     }
+
+
+@app.get("/api/timeline")
+def get_timeline(
+    top_n: int = Query(10, ge=1, le=25),
+    sectors: str | None = Query(
+        None,
+        description=(
+            "Comma-separated NAICS prefixes (any length). "
+            "Default: 5415,54161,54133,5112,5182,54171 — Computer Systems Design, "
+            "Mgmt Consulting, Engineering Services, Software, Data Processing, R&D."
+        ),
+    ),
+    min_award: float = Query(100_000, ge=0, description="Minimum award value (default $100K — filters capability-scale grants)."),
+    include_noncorp: bool = Query(False, description="Include universities, associations, individuals, govt entities."),
+):
+    """
+    Grants-as-leading-indicator view: top-N plausible B2G bidders in IT /
+    engineering / R&D sectors with yearly funding breakdown. Powers /timeline.
+    """
+    df = _require_data()
+    sector_list = [s.strip() for s in sectors.split(",") if s.strip()] if sectors else None
+    return timeline(df, top_n=top_n, sectors=sector_list, min_award=min_award, exclude_noncorp=not include_noncorp)
 
 
 @app.get("/api/sector-heatmap")

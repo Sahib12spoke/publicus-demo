@@ -6,6 +6,7 @@ import { useTheme } from "./theme-provider";
 const LINKS = [
   { href: "/",         label: "home" },
   { href: "/radar",    label: "radar" },
+  { href: "/timeline", label: "timeline", green: true },
   { href: "/map",      label: "map" },
   { href: "/programs", label: "programs" },
   { href: "/quality",  label: "quality", green: true },

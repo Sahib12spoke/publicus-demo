@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
+/* Hide Next.js dev indicator portal (N-issues badge) for a clean demo */
+nextjs-portal { display: none !important; }
+
 /* ── CSS variables (dark mode default) ───────────────────────────────────── */
 :root {
   --bg:              #000000;

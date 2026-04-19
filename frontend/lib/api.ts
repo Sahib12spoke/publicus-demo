@@ -120,6 +120,34 @@ export interface RecipientProfile {
   awards:             AwardRow[];
 }
 
+export interface TimelineYearly {
+  fy: string;
+  value: number;
+  count: number;
+}
+
+export interface TimelineRecipient {
+  rank: number;
+  entity_id: string;
+  recipient_name: string;
+  province: string | null;
+  sector_code: string;
+  sector_label: string;
+  total_funding: number;
+  total_funding_fmt: string;
+  grant_count: number;
+  first_year: string | null;
+  latest_year: string | null;
+  top_program: string | null;
+  top_department: string | null;
+  yearly: TimelineYearly[];
+}
+
+export interface TimelineData {
+  recipients: TimelineRecipient[];
+  years: string[];
+}
+
 export interface QaRow {
   rule: string;
   description: string;
@@ -142,6 +170,8 @@ export const api = {
   programs:           (status?: string, programType?: string) =>
                         get<ProgramMetadata[]>("/programs", { status, program_type: programType }),
   recipient:          (entityId: string)           => get<RecipientProfile>(`/recipient/${entityId}`),
+  timeline:           (topN?: number, sectors?: string, minAward?: number) =>
+                        get<TimelineData>("/timeline", { top_n: topN, sectors, min_award: minAward }),
   sectorHeatmap:      ()                          => get<HeatmapData>("/sector-heatmap"),
   qaReport:           ()                          => get<QaRow[]>("/qa-report"),
   health:             ()                          => get<{ status: string; records: number }>("/health"),

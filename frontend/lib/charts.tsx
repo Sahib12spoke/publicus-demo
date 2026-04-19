@@ -2,7 +2,7 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, Cell,
+  CartesianGrid, Cell, LineChart, Line, Legend,
 } from "recharts";
 
 /* ── shared tooltip style ──────────────────────────────────────────────── */
@@ -58,6 +58,217 @@ export function TrendChart({ data }: { data: TrendRow[] }) {
         <Bar dataKey="total_funding" fill="var(--accent)" radius={[2, 2, 0, 0]} maxBarSize={40} />
       </BarChart>
     </ResponsiveContainer>
+  );
+}
+
+/* ── Multi-line Timeline Chart ────────────────────────────────────────────── */
+const LINE_COLORS = [
+  "#3ea16b", "#6aa7ff", "#e6b84a", "#c08bf5", "#ff8863",
+  "#4cc3c3", "#f07a9a", "#9bc34a", "#a38860", "#8a8fd3",
+];
+
+export interface TimelineSeries {
+  key: string;        // entity_id
+  name: string;       // recipient_name
+  sector?: string;
+}
+
+export interface TimelinePoint { fy: string; [key: string]: number | string; }
+
+export function TimelineChart({
+  data,
+  series,
+  onSeriesClick,
+}: {
+  data: TimelinePoint[];
+  series: TimelineSeries[];
+  onSeriesClick?: (entityId: string) => void;
+}) {
+  if (!data.length || !series.length) return <div className="empty">No timeline data</div>;
+  return (
+    <ResponsiveContainer width="100%" height={360}>
+      <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+        <XAxis
+          dataKey="fy"
+          interval={0}
+          tick={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "var(--text-muted)" }}
+          axisLine={false}
+          tickLine={false}
+          angle={-35}
+          textAnchor="end"
+          height={50}
+        />
+        <YAxis
+          tickFormatter={fmt}
+          tick={{ fontFamily: "var(--font-mono)", fontSize: 11, fill: "var(--text-muted)" }}
+          axisLine={false}
+          tickLine={false}
+          width={60}
+        />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          formatter={(val: number, name: string) => [fmt(val), name]}
+          cursor={{ stroke: "var(--text-muted)", strokeDasharray: "3 3" }}
+        />
+        <Legend
+          wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: "0.7rem", paddingTop: 8 }}
+          iconType="plainline"
+          onClick={(o) => onSeriesClick?.(o.dataKey as string)}
+        />
+        {series.map((s, i) => (
+          <Line
+            key={s.key}
+            type="linear"
+            dataKey={s.key}
+            name={s.name}
+            stroke={LINE_COLORS[i % LINE_COLORS.length]}
+            strokeWidth={1.5}
+            dot={{ r: 3, strokeWidth: 0 }}
+            activeDot={{ r: 6 }}
+            connectNulls={false}
+            isAnimationActive={false}
+          />
+        ))}
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+/* ── Lane Timeline (recipient-per-row, Gantt-style) ──────────────────────── */
+
+export interface LaneYearly { fy: string; value: number; count: number; }
+export interface LaneRecipient {
+  entity_id: string;
+  name: string;
+  total_fmt: string;
+  province?: string | null;
+  yearly: LaneYearly[];
+}
+
+export function LaneTimelineChart({
+  recipients,
+  years,
+  selected,
+  onSelect,
+}: {
+  recipients: LaneRecipient[];
+  years: string[];
+  selected?: string | null;
+  onSelect?: (entityId: string) => void;
+}) {
+  if (!recipients.length || !years.length) return <div className="empty">No timeline data</div>;
+
+  const maxValue = Math.max(
+    ...recipients.flatMap(r => r.yearly.map(y => y.value)),
+    1,
+  );
+  const MIN_R = 4;
+  const MAX_R = 18;
+  const dotRadius = (v: number) => MIN_R + Math.sqrt(v / maxValue) * (MAX_R - MIN_R);
+
+  const xPercent = (fy: string) => {
+    const idx = years.indexOf(fy);
+    if (idx < 0) return -1;
+    return years.length === 1 ? 50 : (idx / (years.length - 1)) * 100;
+  };
+
+  const tickIndices =
+    years.length <= 8
+      ? years.map((_, i) => i)
+      : Array.from({ length: 6 }, (_, k) => Math.round((k / 5) * (years.length - 1)));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {recipients.map((r, i) => {
+        const isSel = selected === r.entity_id;
+        const color = LINE_COLORS[i % LINE_COLORS.length];
+        return (
+          <div
+            key={r.entity_id}
+            onClick={() => onSelect?.(r.entity_id)}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "240px 1fr 90px",
+              alignItems: "center",
+              padding: "6px 8px",
+              background: isSel ? "var(--bg-hover)" : "transparent",
+              borderLeft: `2px solid ${isSel ? color : "transparent"}`,
+              borderBottom: "1px solid var(--border)",
+              cursor: "pointer",
+              fontSize: "0.78rem",
+              transition: "background 0.12s ease",
+            }}
+          >
+            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 12 }}>
+              <span style={{ color: "var(--text-muted)", marginRight: 8, fontFamily: "var(--font-mono)", fontSize: "0.7rem" }}>
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span style={{ fontWeight: 500 }}>{r.name}</span>
+              {r.province && (
+                <span style={{ color: "var(--text-muted)", marginLeft: 6, fontSize: "0.7rem" }}>· {r.province}</span>
+              )}
+            </div>
+            <div style={{ position: "relative", height: 36, margin: "0 14px" }}>
+              <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: 1, background: "var(--border)" }} />
+              {r.yearly.filter(y => y.value > 0).map(y => {
+                const x = xPercent(y.fy);
+                if (x < 0) return null;
+                const rad = dotRadius(y.value);
+                return (
+                  <div
+                    key={y.fy}
+                    title={`${r.name}\n${y.fy} · ${fmt(y.value)}${y.count > 1 ? ` (${y.count} grants)` : ""}`}
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: `${x}%`,
+                      width: rad * 2,
+                      height: rad * 2,
+                      marginLeft: -rad,
+                      marginTop: -rad,
+                      borderRadius: "50%",
+                      background: color,
+                      border: "2px solid var(--bg)",
+                      boxShadow: "0 0 0 1px " + color + "55",
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <div style={{ color: "var(--text)", textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 500 }}>
+              {r.total_fmt}
+            </div>
+          </div>
+        );
+      })}
+      <div style={{ display: "grid", gridTemplateColumns: "240px 1fr 90px", marginTop: 6 }}>
+        <div />
+        <div style={{ position: "relative", height: 20, margin: "0 14px" }}>
+          {tickIndices.map(i => {
+            const x = years.length === 1 ? 50 : (i / (years.length - 1)) * 100;
+            return (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  left: `${x}%`,
+                  top: 0,
+                  transform: "translateX(-50%)",
+                  fontSize: "0.65rem",
+                  color: "var(--text-muted)",
+                  fontFamily: "var(--font-mono)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {years[i]}
+              </div>
+            );
+          })}
+        </div>
+        <div />
+      </div>
+    </div>
   );
 }
 
