@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { FlipStatBox } from "./flip-stat";
 
 async function getStats() {
   try { return await api.stats(); } catch { return null; }
@@ -11,32 +12,36 @@ export default async function HomePage() {
   return (
     <>
       <section className="hero">
-        <h1>Who's getting funded<br />in your space?</h1>
+        <h1>Your competitors are<br />grant-funded. Are you?</h1>
         <p>
-          Grant Radar maps Canadian government grants to competitive intelligence.
-          See which organizations in your industry received grants, how much, and from which
-          programs — before you bid.
+          Canadian government grants are public data — but raw, unnormalized, and impossible to query competitively.
+          Grant Radar turns 221K federal awards into a competitive intelligence layer:
+          see which rivals are subsidized, from which programs, before they show up at your next RFP.
         </p>
         <div className="hero-actions">
           <Link href="/radar" className="btn">Open Competitive Radar →</Link>
-          <Link href="/map" className="btn btn-secondary">Sector Funding Map</Link>
+          <Link href="/quality" className="btn btn-secondary">See Pipeline Quality</Link>
         </div>
       </section>
 
       {stats && (
         <div className="stats">
           {[
-            { value: stats.total_funding_fmt,            label: "Total Grants Tracked" },
+            { value: stats.total_funding_fmt,             label: "Total Grants Tracked" },
             { value: stats.total_awards.toLocaleString(), label: "Award Records" },
             { value: stats.unique_recipients.toLocaleString(), label: "Unique Recipients" },
-            { value: `${stats.naics_coverage_pct}%`,     label: "Industry Classified" },
-            { value: stats.year_range,                   label: "Fiscal Years" },
+            { value: stats.year_range,                    label: "Fiscal Years" },
           ].map(({ value, label }) => (
             <div key={label} className="stat-box">
               <div className="value">{value}</div>
               <div className="label">{label}</div>
             </div>
           ))}
+          <FlipStatBox
+            value={`${stats.naics_coverage_pct}%`}
+            label="Industry Classified"
+            back="Only 4.8% of grant records include an industry (NAICS) code — the government rarely files one. Grant Radar infers the rest from program names and descriptions using keyword matching."
+          />
         </div>
       )}
 
@@ -62,9 +67,9 @@ export default async function HomePage() {
           },
           {
             icon: "∿",
-            href: "/radar",
-            title: "Funding Trends",
-            desc: "Is grant activity in your sector rising or falling? A rising trend means more subsidized competitors are coming.",
+            href: "/quality",
+            title: "Pipeline Quality",
+            desc: "7-stage data pipeline with full QA reporting. Entity resolution, deduplication, NAICS inference — see exactly how the data was built.",
           },
         ].map(({ icon, href, title, desc }) => (
           <Link href={href} key={title} style={{ textDecoration: "none" }}>
@@ -89,6 +94,23 @@ export default async function HomePage() {
         </p>
       </div>
 
+      <div className="card" style={{ marginBottom: "1.5rem" }}>
+        <div className="card-title">What's coming next</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginTop: "0.5rem" }}>
+          {[
+            { icon: "◎", title: "Competitor Alerts", desc: "Get notified when a rival receives a new grant. Stay ahead before they show up at your RFP." },
+            { icon: "▦", title: "Grants → RFP Timeline", desc: "See which grant-funded companies became your procurement competitors 12–18 months later." },
+            { icon: "◈", title: "Provincial Grants", desc: "Ontario, Quebec, BC provincial programs — the federal dataset is just the start." },
+            { icon: "∿", title: "Recipient Deep Dives", desc: "ML-powered NAICS classification and natural-language search across all 221K awards." },
+          ].map(({ icon, title, desc }) => (
+            <div key={title} style={{ borderLeft: "2px solid var(--border)", paddingLeft: "1rem" }}>
+              <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.25rem" }}>{icon} {title}</div>
+              <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", lineHeight: 1.5 }}>{desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="card">
         <div className="card-title">Data sources</div>
         <table>
@@ -103,7 +125,7 @@ export default async function HomePage() {
           <tbody>
             {[
               ["Federal Open Canada", "All departments, FY 2005–present", "Quarterly", "active"],
-              ["Alberta Grants",      "Provincial awards, 2014–present",  "Quarterly", "active"],
+              ["Alberta Grants",      "Provincial awards, 2014–present",  "Quarterly", "planned"],
               ["Montreal Open Data",  "Municipal grants + contracts",      "Near real-time", "planned"],
             ].map(([src, cov, upd, status]) => (
               <tr key={src}>
